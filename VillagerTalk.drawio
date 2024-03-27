@@ -1,11 +1,117 @@
-<mxfile host="app.diagrams.net" modified="2024-03-26T13:26:09.784Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36" etag="PuuMSAmFz3IqmiXqMVLG" version="24.1.0" type="github">
+<mxfile host="app.diagrams.net" modified="2024-03-27T14:38:25.758Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36" etag="ofgRl1LuqmGSmKOCHgtX" version="24.2.0" type="github">
   <diagram name="Seite-1" id="Se5GoBDr75xGsUrsnyKY">
-    <mxGraphModel dx="1434" dy="754" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1434" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="1600" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="1DP0YrRp1GodrxpCtc5e-1" value="CLIENT" style="rounded=0;whiteSpace=wrap;html=1;fontSize=35;" vertex="1" parent="1">
+        <mxCell id="1DP0YrRp1GodrxpCtc5e-1" value="CLIENT" style="rounded=0;whiteSpace=wrap;html=1;fontSize=35;" parent="1" vertex="1">
           <mxGeometry x="30" y="10" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-2" value="SERVER" style="rounded=0;whiteSpace=wrap;html=1;fontSize=35;" vertex="1" parent="1">
+          <mxGeometry x="550" y="10" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-6" value="sends&amp;nbsp;&lt;span style=&quot;font-family: &amp;quot;JetBrains Mono Medium&amp;quot;, monospace; background-color: rgb(30, 31, 34); color: rgb(169, 183, 198);&quot;&gt;OpenScreenS2CPacket&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jwbwDTE_0DO5R2KummH2-5">
+          <mxGeometry x="0.2409" y="-2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-4" value="somehow registers the player opening an inventory" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="120" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-7" target="jwbwDTE_0DO5R2KummH2-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-7" target="jwbwDTE_0DO5R2KummH2-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-7" value="Checks if the packet is Villager Inv.&lt;div&gt;id:&lt;/div&gt;&lt;table style=&quot;font-size: 14px; background-color: rgb(248, 249, 250); color: rgb(34, 34, 34); margin: 1em 0px; border: 1px solid rgb(162, 169, 177); border-collapse: collapse; font-family: sans-serif; text-align: start;&quot; class=&quot;wikitable&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td style=&quot;border: 1px solid rgb(162, 169, 177); padding: 0.2em 0.4em;&quot;&gt;19&lt;/td&gt;&lt;td style=&quot;border: 1px solid rgb(162, 169, 177); padding: 0.2em 0.4em;&quot;&gt;minecraft:merchant&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-9" target="jwbwDTE_0DO5R2KummH2-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-9" value="Open Chat UI" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="250" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-11" value="somehow figure out what the villager Object is?" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="250" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-14">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="530" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-18" value="request packet&amp;nbsp;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jwbwDTE_0DO5R2KummH2-17">
+          <mxGeometry x="-0.0998" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-14" value="request initial LLM message" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="340" width="175" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-19" target="jwbwDTE_0DO5R2KummH2-22">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="800" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-21" value="if exists" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jwbwDTE_0DO5R2KummH2-20">
+          <mxGeometry x="-0.0131" y="4" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-19">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="590" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-24" value="doesn&#39;t exist, new villager" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jwbwDTE_0DO5R2KummH2-23">
+          <mxGeometry x="0.2041" y="3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-19" value="look up villager in database" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="350" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="jwbwDTE_0DO5R2KummH2-22">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="260" y="540" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="545" y="540" />
+              <mxPoint x="545" y="541" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-27" value="response packet" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jwbwDTE_0DO5R2KummH2-26">
+          <mxGeometry x="0.6248" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-22" value="-generate starting prompt with existing params&lt;div&gt;-send response to client&lt;/div&gt;&lt;div&gt;-maybe update relationship param?&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="470" width="160" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-25" value="-generate promt parameters&lt;div&gt;-generate starting prompt and genrate response&lt;/div&gt;&lt;div&gt;-send response to cient&lt;/div&gt;&lt;div&gt;-save params and villager id to db&lt;/div&gt;&lt;div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="470" width="170" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-28" value="display message in chat and wait for player chat" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="510" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-29" value="player sends message in chat" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="660" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="jwbwDTE_0DO5R2KummH2-30" value="get trade offers from&amp;nbsp;&lt;span style=&quot;font-family: &amp;quot;JetBrains Mono Medium&amp;quot;, monospace; background-color: rgb(30, 31, 34); color: rgb(169, 183, 198);&quot;&gt;SetTradeOffersS2CPacket&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="250" width="190" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

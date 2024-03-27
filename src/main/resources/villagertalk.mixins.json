@@ -3,9 +3,12 @@
 	"package": "villagertalk.villagertalk.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"ExampleMixin"
+		"VillagerEntityMixin",
+		"MerchantScreenHandlerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
-	}
+	},
+	"client": [],
+	"server": []
 }

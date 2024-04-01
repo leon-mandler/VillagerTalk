@@ -12,6 +12,8 @@ import villagertalk.villagertalk.VillagerTalk;
 public abstract class MerchantScreenHandlerMixin {
     @Inject(at = @At("HEAD"), method = "onClosed(Lnet/minecraft/entity/player/PlayerEntity;)V")
     private void closeHandledScreen(PlayerEntity player, CallbackInfo info) {
-        VillagerTalk.onVillagerTradeClose(player);
+        if(!player.getWorld().isClient()){
+            VillagerTalk.onVillagerTradeClose(player);
+        }
     }
 }

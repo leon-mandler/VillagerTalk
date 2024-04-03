@@ -8,6 +8,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import villagertalk.villagertalk.VillagerTalk;
 
+/**
+ * VillagerEntityMixin
+ * Mixin to call the onVillagerTradeOpen method when the VillagerEntity begins a trade
+ */
+
+@Deprecated(forRemoval = true)
 @Mixin(VillagerEntity.class)
 public abstract class VillagerEntityMixin{
     @Inject(at = @At("HEAD"), method = "beginTradeWith(Lnet/minecraft/entity/player/PlayerEntity;)V")

@@ -8,6 +8,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import villagertalk.villagertalk.VillagerTalk;
 
+/**
+ * MerchantScreenHandlerMixin
+ * Mixin to call the onVillagerTradeClose method when the MerchantScreen is closed
+ */
+@Deprecated(forRemoval = true)
 @Mixin(MerchantScreenHandler.class)
 public abstract class MerchantScreenHandlerMixin {
     @Inject(at = @At("HEAD"), method = "onClosed(Lnet/minecraft/entity/player/PlayerEntity;)V")

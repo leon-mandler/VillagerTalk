@@ -3,7 +3,7 @@
 	"package": "villagertalk.villagertalk.mixin.client",
 	"compatibilityLevel": "JAVA_17",
 	"client": [
-		"ExampleMixin"
+		"HandledScreensMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -1,6 +1,5 @@
 package villagertalk.villagertalk.VillagerChatUI;
 
-import net.minecraft.client.gui.widget.ScrollableTextWidget;
 import villagertalk.villagertalk.VillagerTalk;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkC2SNetworkingConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -73,7 +72,7 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     private boolean scrolling;
 
     //villagertalk constants
-    private ScrollableTextWidget chatBox;
+    private VillagerTalkScrollableChatWidget chatBox;
     private final List<String> chatHistory = new ArrayList<String>();
     private final TextFieldWidget writingField;
 
@@ -103,12 +102,12 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     }
 
 
-     /*Registers the VillagerResponsePacket in a static context
-     Call the necessary methods on the current instance to ensure thread safety*/
-    static {
+    /*Registers the VillagerResponsePacket in a static context
+    Call the necessary methods on the current instance to ensure thread safety*/
+    static{
         ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_RESPONSE_PACKET, ((client, handler2, buf, responseSender) -> {
             String response = buf.readString();
-            if (currentInstance != null) {
+            if (currentInstance != null){
                 client.execute(() -> {
                     currentInstance.onVillagerResponseReceived(response);
                 });
@@ -136,9 +135,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      * @param response the response from the villager
      */
     private void onVillagerResponseReceived(String response){
-        if(VillagerTalk.TESTING){
-            System.out.println("onVillagerResponseReceived: " + response);
-        }
+        if (VillagerTalk.TESTING) System.out.println("onVillagerResponseReceived: " + response);
+
         String parsedResponse = processVillagerResponse(response);
         chatHistory.add(parsedResponse);
         addMessageToChatBox("\n\nVillager: " + parsedResponse);
@@ -147,13 +145,14 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     /**
      * Adds a message to the chat box
      * This is as far as i know the only way to update the chat box, since the setMessage() method doesn't work.
+     *
      * @param text the message to be added
      */
     private void addMessageToChatBox(String text){
         chatBox = newChatBoxWithUpdatedText(chatBox.getMessage().getString() + text);
-        if(VillagerTalk.TESTING){
-            System.out.println("ChatBox: " + chatBox.getMessage().getString());
-        }
+        chatBox.setMaxScrollY();
+
+        if (VillagerTalk.TESTING) System.out.println("ChatBox: " + chatBox.getMessage().getString());
     }
 
     /**
@@ -162,8 +161,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      * @param text the text to be displayed
      * @return the new ScrollableTextWidget
      */
-    private ScrollableTextWidget newChatBoxWithUpdatedText(String text){
-        return new ScrollableTextWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
+    private VillagerTalkScrollableChatWidget newChatBoxWithUpdatedText(String text){
+        return new VillagerTalkScrollableChatWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
             50, //(this.height - this.backgroundHeight) / 2, //yPos
             256, //width
             256, //height
@@ -206,20 +205,28 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
-        if (!writingField.isActive() || keyCode == GLFW.GLFW_KEY_ESCAPE){//if the field isnt active or escape is pressed, we dont care about our own processing
-            if(keyCode == GLFW.GLFW_KEY_ENTER){ //if field is not active and player presses enter, enter the field
-                writingField.setFocused(true);
-            }
+        // Handle ESC key press
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE){
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
-        if (keyCode == GLFW.GLFW_KEY_E){ //to not exit villager window when typing e
-            return true;
+
+        boolean writingFieldActive = writingField.isActive();
+
+        if (writingFieldActive && keyCode == GLFW.GLFW_KEY_E){
+            return true; // Prevent exiting the window when typing 'E'
         }
-        if (keyCode == GLFW.GLFW_KEY_ENTER){ //if enter is pressed, send the message
+
+        if (writingFieldActive && keyCode == GLFW.GLFW_KEY_ENTER){
             sendPlayerMessage();
-            return true;
+            return super.keyPressed(keyCode, scanCode, modifiers);
         }
-        return super.keyPressed(keyCode, scanCode, modifiers); //if none of the above, call super
+
+        if (!writingFieldActive && keyCode == GLFW.GLFW_KEY_ENTER){
+            writingField.setFocused(true);
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     /**

@@ -21,7 +21,7 @@ public class VillagerTalk implements ModInitializer{
     // That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger("villagertalk");
 
-    public static boolean TESTING = true;
+    public static boolean TESTING = false;
     @Override
     public void onInitialize(){
         // This code runs as soon as Minecraft is in a mod-load-ready state.
@@ -46,7 +46,8 @@ public class VillagerTalk implements ModInitializer{
      * @param player The player who sent the prompt
      */
     private void onPlayerPromptReceived(String prompt, ServerPlayerEntity player){
-        sendResponsePacket(generateLLMResponse(prompt), player);
+        String response = generateLLMResponse(prompt);
+        sendResponsePacket(response, player);
     }
 
     /**

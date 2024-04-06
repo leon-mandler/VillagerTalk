@@ -1,0 +1,5 @@
+- https://github.com/shedaniel/advancements-enlarger/blob/1.19/src/main/java/me/shedaniel/advancementsenlarger/gui/BiggerAdvancementsScreen.java
+- https://github.com/Jacobwasbeast/Minecraft-AI-ChatBot/tree/old/Fabric/src/main
+- https://github.com/kregerl/Searchable-Containers/blob/master/src/main/java/com/loucaskreger/searchablecontainers/mixin/HandledScreenMixin.java
+- https://github.com/ModsByLeo/SpeedTrading/blob/1.19/src/main/java/adudecalledleo/speedtrading/mixin/MerchantScreenMixin.java
+- https://github.com/d4rkm0nkey/HorseStatsVanilla/blob/main/src/client/java/monkey/lumpy/horse/stats/vanilla/mixin/client/HorseScreenMixin.java

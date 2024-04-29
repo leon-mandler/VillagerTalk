@@ -15,7 +15,7 @@ import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkS2CNetworkingCo
 
 
 
-public class VillagerTalk implements ModInitializer{
+public class VillagerTalk implements ModInitializer {
     // This logger is used to write text to the console and the log file.
     // It is considered best practice to use your mod id as the logger's name.
     // That way, it's clear which mod wrote info, warnings, and errors.
@@ -30,9 +30,8 @@ public class VillagerTalk implements ModInitializer{
         ServerPlayNetworking.registerGlobalReceiver(VillagerTalkC2SNetworkingConstants.PLAYER_SENT_PROMPT, (server, player, handler, buf, responseSender) -> {
             String prompt = buf.readString();
             server.execute(() -> {
-                if(TESTING){
-                    System.out.println("Received prompt from player: " + prompt);
-                }
+                if(TESTING) System.out.println("Received prompt from player👌: " + prompt);
+
                 onPlayerPromptReceived(prompt, player);
             });
         });
@@ -57,7 +56,7 @@ public class VillagerTalk implements ModInitializer{
      * @return The generated response
      */
     private String generateLLMResponse(String prompt){
-        return "Test Response, lorem ipsum blallballall lajd9uiawhnduanwdiuawndiuawnbdiuawhndaiuwhbdiauwbdiazuwbd";
+        return "Test Response 😀😍😝🥵🥵🥵🍆💋💋💋, lorem ipsum blallballall lajd9uiawhnduanwdiuawndiuawnbdiuawhndaiuwhbdiauwbdiazuwbd";
     }
 
     /**

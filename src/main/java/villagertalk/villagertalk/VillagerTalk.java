@@ -36,7 +36,7 @@ public class VillagerTalk implements ModInitializer{
     // That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger("villagertalk");
     private static final OpenAiService APIService = new OpenAiService(
-        "sk-proj-LpPnXvPW4zcF3iARsGtgT3BlbkFJHPV7wa5LDBYJuW9EfNAl");
+        "");
     private static final Random random = new Random();
     public static boolean TESTING = false;
 

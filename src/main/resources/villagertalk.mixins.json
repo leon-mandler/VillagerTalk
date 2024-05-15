@@ -1,12 +1,16 @@
 {
-	"required": true,
-	"package": "villagertalk.villagertalk.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"mixins": [
-	],
-	"injectors": {
-		"defaultRequire": 1
-	},
-	"client": [],
-	"server": []
+  "required": true,
+  "package": "villagertalk.villagertalk.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "MerchantInventoryAccessor",
+    "MerchantScreenHandlerAccessor",
+    "VillagerEntityInvoker",
+    "VillagerEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [],
+  "server": []
 }

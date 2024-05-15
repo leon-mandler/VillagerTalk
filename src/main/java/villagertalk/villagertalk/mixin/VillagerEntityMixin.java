@@ -13,11 +13,12 @@ import villagertalk.villagertalk.VillagerTalk;
  * Mixin to call the onVillagerTradeOpen method when the VillagerEntity begins a trade
  */
 
-@Deprecated(forRemoval = true)
 @Mixin(VillagerEntity.class)
 public abstract class VillagerEntityMixin{
     @Inject(at = @At("HEAD"), method = "beginTradeWith(Lnet/minecraft/entity/player/PlayerEntity;)V")
     private void beginTradeWith(PlayerEntity customer, CallbackInfo info) {
         VillagerTalk.onVillagerTradeOpen(customer,  (VillagerEntity)(Object)this);
     }
+
+
 }

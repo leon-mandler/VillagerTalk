@@ -1,5 +1,6 @@
 package villagertalk.villagertalk.VillagerChatUI;
 
+import net.minecraft.village.*;
 import villagertalk.villagertalk.VillagerTalk;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkC2SNetworkingConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -24,9 +25,6 @@ import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.village.TradeOffer;
-import net.minecraft.village.TradeOfferList;
-import net.minecraft.village.VillagerData;
 import org.lwjgl.glfw.GLFW;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkS2CNetworkingConstants;
 
@@ -73,7 +71,7 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
 
     //villagertalk constants
     private VillagerTalkScrollableChatWidget chatBox;
-    private final List<String> chatHistory = new ArrayList<String>();
+    private final List<String> chatHistory = new ArrayList<>();
     private final TextFieldWidget writingField;
 
     private static ExtendedMerchantScreen currentInstance = null;
@@ -88,15 +86,16 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         this.writingField = new TextFieldWidget(MinecraftClient.getInstance().textRenderer, 256, 64, Text.literal(""));
         this.writingField.setEditable(true);
         this.writingField.setDrawsBackground(true);
-        this.writingField.setMaxLength(128);
+        this.writingField.setMaxLength(256);
         this.writingField.setPlaceholder(Text.literal("Click to talk with villager")); //placeholder
-        this.addSelectableChild(writingField);
+        this.addDrawableChild(writingField);
         writingField.setPosition(50, 325);
 
 
-        this.chatBox = newChatBoxWithUpdatedText(getInitialMessageFromServer());
+        this.chatBox = newChatBoxWithUpdatedText("Waiting for initial message...");
+        requestInitialMessageFromServer();
         chatBox.visible = true;
-        this.addSelectableChild(chatBox);
+        this.addDrawableChild(chatBox);
 
         currentInstance = this;
     }
@@ -113,6 +112,15 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
                 });
             }
         }));
+
+        ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_INITIAL_MESSAGE, ((client, handler2, buf, responseSender) -> {
+            String initialMessage = buf.readString();
+            if (currentInstance != null){
+                client.execute(() -> {
+                    currentInstance.onInitialMessageReceived(initialMessage);
+                });
+            }
+        }));
     }
 
 
@@ -126,6 +134,10 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     public void close(){
         super.close();
         currentInstance = null;
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeString("closed");
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED, buf); //send packet to server
+
     }
 
     /**
@@ -136,22 +148,19 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      */
     private void onVillagerResponseReceived(String response){
         if (VillagerTalk.TESTING) System.out.println("onVillagerResponseReceived: " + response);
-
-        String parsedResponse = processVillagerResponse(response);
-        chatHistory.add(parsedResponse);
-        addMessageToChatBox("\n\nVillager: " + parsedResponse);
+        chatHistory.add(response);
+        addMessageToChatBox("\n\nVillager: " + response);
     }
 
     /**
      * Adds a message to the chat box
-     * This is as far as i know the only way to update the chat box, since the setMessage() method doesn't work.
+     * This is as far as I know the only way to update the chat box, since the setMessage() method doesn't work.
      *
      * @param text the message to be added
      */
     private void addMessageToChatBox(String text){
         chatBox = newChatBoxWithUpdatedText(chatBox.getMessage().getString() + text);
         chatBox.setMaxScrollY();
-
         if (VillagerTalk.TESTING) System.out.println("ChatBox: " + chatBox.getMessage().getString());
     }
 
@@ -170,37 +179,43 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
             MinecraftClient.getInstance().textRenderer); //renderer
     }
 
-    /**
-     * Processes the villager response
-     *
-     * @param response the response from the villager
-     * @return the processed response
-     */
-    private String processVillagerResponse(String response){
-        return response; //TODO
-    }
+//    /**
+//     * Processes the villager response
+//     *
+//     * @param response the response from the villager
+//     * @return the processed response
+//     */
+//    private String processVillagerResponse(String response){
+//        return response; //TODO
+//    }
+
+//    /**
+//     * Returns the chat history as a string
+//     *
+//     * @return the chat history as a string
+//     */
+//    private String getChatHistoryAsString(){
+//        StringBuilder sb = new StringBuilder();
+//        for (String s : chatHistory){
+//            sb.append(s).append("\n");
+//        }
+//        return sb.toString();
+//    }
 
     /**
-     * Returns the chat history as a string
-     *
-     * @return the chat history as a string
+     * Requests the initial message from the server
      */
-    private String getChatHistoryAsString(){
-        StringBuilder sb = new StringBuilder();
-        for (String s : chatHistory){
-            sb.append(s).append("\n");
-        }
-        return sb.toString();
+    private void requestInitialMessageFromServer(){
+        PacketByteBuf buf = PacketByteBufs.create();//create byte buf
+        //        MerchantEntity merchant = (MerchantEntity)((MerchantScreenHandlerAccessor) this.handler).getMerchant();
+        //        buf.writeString(merchant.); //write the string to the buf
+        buf.writeString("req");
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.INITIAL_VILLAGER_MESSAGE_REQUEST, buf); //send packet to server
     }
 
-    /**
-     * Returns the initial message from the server
-     *
-     * @return the initial message from the server
-     */
-    private String getInitialMessageFromServer(){
-        //TODO
-        return "Villager: Hello there! \n" + "I am a villager. I am here to trade with you.";
+    private void onInitialMessageReceived(String message){
+        chatHistory.add(message);
+        this.chatBox = newChatBoxWithUpdatedText("Villager: " + message);
     }
 
     @Override

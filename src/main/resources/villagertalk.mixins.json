@@ -3,7 +3,6 @@
   "package": "villagertalk.villagertalk.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "MerchantInventoryAccessor",
     "MerchantScreenHandlerAccessor",
     "VillagerEntityInvoker",
     "VillagerEntityMixin"

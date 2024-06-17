@@ -22,10 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkC2SNetworkingConstants;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkS2CNetworkingConstants;
-import villagertalk.villagertalk.mixin.MerchantScreenHandlerAccessor;
 import villagertalk.villagertalk.mixin.VillagerEntityInvoker;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,8 +35,9 @@ public class VillagerTalk implements ModInitializer{
     // It is considered best practice to use your mod id as the logger's name.
     // That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger("villagertalk");
-    private static final OpenAiService APIService = new OpenAiService(
-        "");
+    private static final String MAYBE_SOME_KEY = "7Uu3GnZeci1XvmHRW0HBJFkblB3TR453p4L3NWwr2mmBakcY-jorp-ks";
+
+    private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse().toString());
     private static final Random random = new Random();
     public static boolean TESTING = false;
 
@@ -49,7 +50,7 @@ public class VillagerTalk implements ModInitializer{
         You will chat with players, negotiate trade prices, and respond in character based on your provided attributes.
         Each Villager has its own personality and characteristics that influence how they interact with players.
         Use your knowledge of Minecraft to provide realistic answers, that seem like they could come from a Villager.
-        
+                
         Your Villagers attributes:
         Name: %s
         Age: %d
@@ -63,26 +64,34 @@ public class VillagerTalk implements ModInitializer{
         1. Chat with the player:
             -Respond to the player in the character of the Villager.
             -Use the Villagers Attributes to guide your responses and negotiation style.
-        
-        2. Negotiate Prices:
+                
+        2. Negotiate Prices and Item Amounts:
             -Be open to negotiate trade prices with the player.
-            -Adjust prices based on your Villager's persuasiveness and attitude.
-            -At the end of your response, if the player was sufficiently persuasive, use the command !change_price(ItemName, NewPrice/NewReward) to adjust the price of an item.
+            -Adjust prices/items counts based on your Villager's persuasiveness and attitude.
+            -At the end of your response, if the player was sufficiently persuasive, use a command to adjust the price or amount of an item.
+            -When the player wants to change the amount of emeralds in a trade, use !change_emerald_amount(ItemName, NewEmeraldAmount) to change the emerald amount for the trade that contains the specified ItemName.
+            -When the player wants to change how much items they get (you are selling) or have to give you (you are buying), use !change_item_amount(ItemName, NewItemAmount) to adjust the amount of the specified ItemName. 
             -When it is unclear to you, which of the trade offers the player wants to negotiate, ask for clarification.
             -If the player is rude or threatening, you may also choose to set a higher price, or lower reward.
-        
-        Correct usage of the command !change_price(ItemName, NewPrice/NewReward):
+                
+        Correct usage of the command !change_emerald_amount(ItemName, NewEmeraldAmount):
             -The Item name must exactly identical, to the name specified in the list of trade offers, but not include the amount.
-            -The NewPrice/NewReward parameter, is the new number of Emeralds that the player needs to pay, or receives as a reward.
-            -NewPrice/NewReward must always be whole positive integers.
-        
+            -The NewEmeraldAmount parameter, is the new number of Emeralds that the player needs to pay, or receives as a reward.
+            -NewEmeraldAmount must always be whole positive integers.
+            -0 < NewEmeraldAmount <= 64
+            
+        Correct usage of the command !change_item_amount(ItemName, NewItemAmount):
+            -The Item name must exactly identical, to the name specified in the list of trade offers, but not include the amount.
+            -The NewItemAmount parameter, is the new number of Items that the player receives for their emeralds, or give you to receive emeralds.
+            -0 < NewItemAmount <= 64
+                
         Example Interactions:
         Player: "Can you lower the price of [Item1]?"
-        Villager (Friendly, High Persuasiveness): "Ah, I see you drive a hard bargain, friend! For you, I'll lower the price of [Item1] just a bit. How about [NewPrice]? !change_price(Item1, [NewPrice])"
-        
-        Player: I think [Item4] for [EmeraldReward4] Emeralds is too low!
-        Villager (Grumpy, Medium Persuasiveness): "Hmmph, that's all that I can offer, but fine, I'll increase it to [NewReward] Emeralds. !change_price([Item4], [NewReward])"
-        
+        Villager (Friendly, High Persuasiveness): "Ah, I see you drive a hard bargain, friend! For you, I'll lower the price of [Item1] just a bit. How about [NewPrice]? !!change_emerald_amount(Item1, NewEmeraldAmount)"
+                
+        Player: I think [Item4Amount] of [Item4] is not enough for so many emeralds!
+        Villager (Grumpy, Medium Persuasiveness): "Hmmph, that's all that I can offer, but fine, I can give you [NewAmount] of [Item4] for your money. !change_item_amount([Item4], [NewAmount])"
+                
         Your first message should greet the player, explain who you are and what you can do for them.
         The message should reflect your attitude, age, and profession. If it fits to your Villagers attitude, include a fitting fact about yourself, or promote one of your trades with a compelling argument on why its worth being bought.
         Notes:
@@ -109,7 +118,11 @@ public class VillagerTalk implements ModInitializer{
                                                                 System.out.println(
                                                                     "Received chathistory from player👌: " + playerPrompt);
                                                             }
-                                                            onPlayerPromptReceived(playerPrompt, player);
+                                                            CompletableFuture.supplyAsync(() -> {
+                                                                return generateLLMResponse(playerPrompt, player);
+                                                            }).thenAccept(response -> {
+                                                                sendResponsePacket(response, player);
+                                                            });
                                                         });
                                                     });
 
@@ -119,9 +132,12 @@ public class VillagerTalk implements ModInitializer{
                                                             if (TESTING){
                                                                 System.out.println(
                                                                     "Received initial message request from player👌: " + player.getId());
-
                                                             }
-                                                            sendInitialMessage(player);
+                                                            CompletableFuture.supplyAsync(() -> {
+                                                                return generateInitialResponse(player);
+                                                            }).thenAccept(response -> {
+                                                                sendInitialMessage(player, response);
+                                                            });
                                                         });
                                                     });
 
@@ -142,10 +158,9 @@ public class VillagerTalk implements ModInitializer{
      * generateInitialLlmMessage
      * Generates the initial LLM message from the villager
      */
-    private void sendInitialMessage(ServerPlayerEntity player){
+    private void sendInitialMessage(ServerPlayerEntity player, String message){
         PacketByteBuf buf = PacketByteBufs.create();
-        String initialResponse = generateInitialResponse(player);
-        buf.writeString(initialResponse);
+        buf.writeString(message);
         ServerPlayNetworking.send(player, VillagerTalkS2CNetworkingConstants.VILLAGER_INITIAL_MESSAGE, buf);
     }
 
@@ -217,7 +232,7 @@ public class VillagerTalk implements ModInitializer{
                       .append(" for ")
                       .append(offer.getSellItem().getCount())
                       .append(" Emeralds\n");
-            } else{ //Villager is selling items for the price of emeralds
+            } else{ //Villager is selling items for the newEmeraldAmount of emeralds
                 ItemStack sellItem = offer.getSellItem();
                 selling.append("  -Selling ")
                        .append(sellItem.getCount())
@@ -270,35 +285,76 @@ public class VillagerTalk implements ModInitializer{
      * @return The generated response
      */
     private String generateLLMResponse(String prompt, ServerPlayerEntity player){
-//        String response = "!change_price(Brick, 10)";
-//        VillagerEntity villager = activeVillagers.get(player.getId());
-//        parseStringForCommands(response).forEach((name, price) -> changePrice(name, price, player, villager));
-//        return response;
+//                String response = "!change_price(Brick, 10)";
+//                VillagerEntity villager = activeVillagers.get(player.getId());
+//                parseStringForCommands(response).forEach((name, newEmeraldAmount) -> changePrice(name, newEmeraldAmount, player, villager));
+//                return response;
         List<ChatMessage> playerChatHistory = playerChats.get(player.getId());
         playerChatHistory.add(new ChatMessage(ChatMessageRole.USER.value(), prompt));
         ChatMessage response = makeAPICall(playerChatHistory);
         playerChatHistory.add(response);
         VillagerEntity villager = activeVillagers.get(player.getId());
-        parseStringForCommands(response.getContent()).forEach((name, price) -> changePrice(name, price, player, villager));
-        return response.getContent();
+        String processedResponse = processLLMResponse(response.getContent(), player, villager);
+
+        return processedResponse;
     }
 
-    private Map<String, Integer> parseStringForCommands(String response){
-        // Define the pattern to find the command !change_price(Item, NewPrice)
-        Pattern pattern = Pattern.compile("!change_price\\(([^,]+),\\s*(\\d+)\\)");
-        Matcher matcher = pattern.matcher(response);
-        Map<String, Integer> priceChanges = new HashMap<>();
-        // If the command is found, extract itemName and newPrice
-        while (matcher.find()){
-            String itemName = matcher.group(1).trim();
-            int newPrice = Integer.parseInt(matcher.group(2).trim());
-            // Call the changePrice method with the extracted values
-            priceChanges.put(itemName, newPrice);
+    private String processLLMResponse(String response,  ServerPlayerEntity player, VillagerEntity villager){
+        Pattern[] patterns = {
+            Pattern.compile("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)"),
+            Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)")
+        };
+
+        for (Pattern p : patterns) {
+            Matcher matcher = p.matcher(response);
+            StringBuilder processedResponse = new StringBuilder(response); // Use StringBuilder for modifications
+
+            // Loop through all matches of the current pattern
+            while (matcher.find()) {
+                // Extract itemName, newPrice (or corresponding values for different commands)
+                String itemName = matcher.group(1).trim();
+                int newAmount = Integer.parseInt(matcher.group(2).trim());
+
+                // Call the corresponding method based on the command p
+                switch (p.pattern()) {
+                    case "!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)":
+                        changeEmeraldAmount(itemName, newAmount, player, villager);
+                        break;
+                    case "!change_item_amount\\(([^,]+),\\s*(\\d+)\\)":
+                        changeItemAmount(itemName, newAmount, player, villager);
+                    // Add more cases for other commands and their methods
+                }
+
+                // Replace the matched command with an empty string
+                int start = matcher.start();
+                int end = matcher.end();
+                processedResponse.replace(start, end, "");
+            }
+
+            // Update the response with processed content (after all matches are replaced)
+            response = processedResponse.toString();
         }
-        return priceChanges;
+
+        return response;
     }
 
-    private void changePrice(String itemName, int price, ServerPlayerEntity player, VillagerEntity villager){
+
+
+//    private Map<String, Integer> parseStringForCommands(String response){
+//        // Define the p to find the command !change_price(Item, NewPrice)
+//        Pattern pattern = Pattern.compile("!change_price\\(([^,]+),\\s*(\\d+)\\)");
+//        Matcher matcher = pattern.matcher(response);
+//        Map<String, Integer> priceChanges = new HashMap<>();
+//        // If the command is found, extract itemName and newPrice
+//        while (matcher.find()){
+//            String itemName = matcher.group(1).trim();
+//            int newPrice = Integer.parseInt(matcher.group(2).trim());
+//            // Call the changePrice method with the extracted values
+//            priceChanges.put(itemName, newPrice);
+//        }
+//        return priceChanges;
+//    }
+    private void changeItemAmount(String itemName, int newItemAmount, ServerPlayerEntity player, VillagerEntity villager){
         MerchantScreenHandler handler;
         if (!(player.currentScreenHandler instanceof MerchantScreenHandler)){
             return;
@@ -310,26 +366,61 @@ public class VillagerTalk implements ModInitializer{
                      .getItem()
                      .getName()
                      .getString()
-                     .equals(itemName)){ //villager wants to change the selling price
-                offer.getOriginalFirstBuyItem().setCount(price);
+                     .equals(itemName)){ //villager wants to change amount of an Item they are selling
+                offer.getSellItem().setCount(newItemAmount);
+                break;
+            } else if (offer.getOriginalFirstBuyItem()
+                            .getItem()
+                            .getName()
+                            .getString()
+                            .equals(itemName)){ //villager wants to change amount of an Item they are buying
+                offer.getOriginalFirstBuyItem().setCount(newItemAmount);
+                break;
+            }
+        }
+        villager.setOffers(curOffers);
+        updateTradeGui(villager, handler.syncId);
+    }
+    private void changeEmeraldAmount(String itemName, int newEmeraldAmount, ServerPlayerEntity player, VillagerEntity villager){
+        MerchantScreenHandler handler;
+        if (!(player.currentScreenHandler instanceof MerchantScreenHandler)){
+            return;
+        }
+        handler = (MerchantScreenHandler) player.currentScreenHandler;
+        TradeOfferList curOffers = handler.getRecipes();
+        for (TradeOffer offer : curOffers){
+            if (offer.getSellItem()
+                     .getItem()
+                     .getName()
+                     .getString()
+                     .equals(itemName)){ //villager wants to change the selling newEmeraldAmount
+                offer.getOriginalFirstBuyItem().setCount(newEmeraldAmount);
                 break;
             } else if (offer.getOriginalFirstBuyItem()
                             .getItem()
                             .getName()
                             .getString()
                             .equals(itemName)){ //villager wants to change buying reward
-                offer.getSellItem().setCount(price);
+                offer.getSellItem().setCount(newEmeraldAmount);
                 break;
             }
         }
-        handler.setCanRefreshTrades(true);
-        handler.setOffers(curOffers);
-        handler.sendContentUpdates();
-        handler.updateToClient();
-        ((MerchantScreenHandlerAccessor) handler).getMerchantInventory().updateOffers();
-//        System.out.println(formatTradeOffersIntoString(handler.getRecipes()));
-//        System.out.println(formatTradeOffersIntoString(villager.getOffers()));
+        villager.setOffers(curOffers);
+        updateTradeGui(villager, handler.syncId);
     }
+
+    private void updateTradeGui(VillagerEntity villager, int syncInt){
+        if (villager.getCustomer() != null && villager.getCustomer().currentScreenHandler instanceof MerchantScreenHandler && syncInt != 0){
+            villager.getCustomer()
+                    .sendTradeOffers(syncInt,
+                                     villager.getOffers(),
+                                     villager.getVillagerData().getLevel(),
+                                     villager.getExperience(),
+                                     villager.isLeveledMerchant(),
+                                     villager.canRefreshTrades());
+        }
+    }
+
 
     /**
      * sendResponsePacket

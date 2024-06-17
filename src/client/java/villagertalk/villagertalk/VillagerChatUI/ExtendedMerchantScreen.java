@@ -35,14 +35,19 @@ import java.util.List;
 public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>{
 
     private static final Identifier OUT_OF_STOCK_TEXTURE = new Identifier("container/villager/out_of_stock");
-    private static final Identifier EXPERIENCE_BAR_BACKGROUND_TEXTURE = new Identifier("container/villager/experience_bar_background");
-    private static final Identifier EXPERIENCE_BAR_CURRENT_TEXTURE = new Identifier("container/villager/experience_bar_current");
-    private static final Identifier EXPERIENCE_BAR_RESULT_TEXTURE = new Identifier("container/villager/experience_bar_result");
+    private static final Identifier EXPERIENCE_BAR_BACKGROUND_TEXTURE = new Identifier(
+        "container/villager/experience_bar_background");
+    private static final Identifier EXPERIENCE_BAR_CURRENT_TEXTURE = new Identifier(
+        "container/villager/experience_bar_current");
+    private static final Identifier EXPERIENCE_BAR_RESULT_TEXTURE = new Identifier(
+        "container/villager/experience_bar_result");
     private static final Identifier SCROLLER_TEXTURE = new Identifier("container/villager/scroller");
     private static final Identifier SCROLLER_DISABLED_TEXTURE = new Identifier("container/villager/scroller_disabled");
-    private static final Identifier TRADE_ARROW_OUT_OF_STOCK_TEXTURE = new Identifier("container/villager/trade_arrow_out_of_stock");
+    private static final Identifier TRADE_ARROW_OUT_OF_STOCK_TEXTURE = new Identifier(
+        "container/villager/trade_arrow_out_of_stock");
     private static final Identifier TRADE_ARROW_TEXTURE = new Identifier("container/villager/trade_arrow");
-    private static final Identifier DISCOUNT_STRIKETHROUGH_TEXTURE = new Identifier("container/villager/discount_strikethrough");
+    private static final Identifier DISCOUNT_STRIKETHROUGH_TEXTURE = new Identifier(
+        "container/villager/discount_strikethrough");
     private static final Identifier TEXTURE = new Identifier("textures/gui/container/villager.png");
     private static final int TEXTURE_WIDTH = 1024;
     private static final int TEXTURE_HEIGHT = 256;
@@ -92,7 +97,12 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         writingField.setPosition(50, 325);
 
 
-        this.chatBox = newChatBoxWithUpdatedText("Waiting for initial message...");
+        this.chatBox = new VillagerTalkScrollableChatWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
+                                                            50, //(this.height - this.backgroundHeight) / 2, //yPos
+                                                            256, //width
+                                                            256, //height
+                                                            Text.literal("Thinking about initial Message..."), //text
+                                                            MinecraftClient.getInstance().textRenderer);
         requestInitialMessageFromServer();
         chatBox.visible = true;
         this.addDrawableChild(chatBox);
@@ -104,23 +114,25 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     /*Registers the VillagerResponsePacket in a static context
     Call the necessary methods on the current instance to ensure thread safety*/
     static{
-        ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_RESPONSE_PACKET, ((client, handler2, buf, responseSender) -> {
-            String response = buf.readString();
-            if (currentInstance != null){
-                client.execute(() -> {
-                    currentInstance.onVillagerResponseReceived(response);
-                });
-            }
-        }));
+        ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_RESPONSE_PACKET,
+                                                    ((client, handler2, buf, responseSender) -> {
+                                                        String response = buf.readString();
+                                                        if (currentInstance != null){
+                                                            client.execute(() -> {
+                                                                currentInstance.onVillagerResponseReceived(response);
+                                                            });
+                                                        }
+                                                    }));
 
-        ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_INITIAL_MESSAGE, ((client, handler2, buf, responseSender) -> {
-            String initialMessage = buf.readString();
-            if (currentInstance != null){
-                client.execute(() -> {
-                    currentInstance.onInitialMessageReceived(initialMessage);
-                });
-            }
-        }));
+        ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_INITIAL_MESSAGE,
+                                                    ((client, handler2, buf, responseSender) -> {
+                                                        String initialMessage = buf.readString();
+                                                        if (currentInstance != null){
+                                                            client.execute(() -> {
+                                                                currentInstance.onInitialMessageReceived(initialMessage);
+                                                            });
+                                                        }
+                                                    }));
     }
 
 
@@ -137,7 +149,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeString("closed");
         ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED, buf); //send packet to server
-
     }
 
     /**
@@ -159,8 +170,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      * @param text the message to be added
      */
     private void addMessageToChatBox(String text){
-        chatBox = newChatBoxWithUpdatedText(chatBox.getMessage().getString() + text);
-        chatBox.setMaxScrollY();
+        currentInstance.chatBox.setMessage(chatBox.getMessage().getString() + text);
+        currentInstance.chatBox.setMaxScrollY();
         if (VillagerTalk.TESTING) System.out.println("ChatBox: " + chatBox.getMessage().getString());
     }
 
@@ -172,35 +183,35 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      */
     private VillagerTalkScrollableChatWidget newChatBoxWithUpdatedText(String text){
         return new VillagerTalkScrollableChatWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
-            50, //(this.height - this.backgroundHeight) / 2, //yPos
-            256, //width
-            256, //height
-            Text.literal(text), //text
-            MinecraftClient.getInstance().textRenderer); //renderer
+                                                    50, //(this.height - this.backgroundHeight) / 2, //yPos
+                                                    256, //width
+                                                    256, //height
+                                                    Text.literal(text), //text
+                                                    MinecraftClient.getInstance().textRenderer); //renderer
     }
 
-//    /**
-//     * Processes the villager response
-//     *
-//     * @param response the response from the villager
-//     * @return the processed response
-//     */
-//    private String processVillagerResponse(String response){
-//        return response; //TODO
-//    }
+    //    /**
+    //     * Processes the villager response
+    //     *
+    //     * @param response the response from the villager
+    //     * @return the processed response
+    //     */
+    //    private String processVillagerResponse(String response){
+    //        return response; //TODO
+    //    }
 
-//    /**
-//     * Returns the chat history as a string
-//     *
-//     * @return the chat history as a string
-//     */
-//    private String getChatHistoryAsString(){
-//        StringBuilder sb = new StringBuilder();
-//        for (String s : chatHistory){
-//            sb.append(s).append("\n");
-//        }
-//        return sb.toString();
-//    }
+    //    /**
+    //     * Returns the chat history as a string
+    //     *
+    //     * @return the chat history as a string
+    //     */
+    //    private String getChatHistoryAsString(){
+    //        StringBuilder sb = new StringBuilder();
+    //        for (String s : chatHistory){
+    //            sb.append(s).append("\n");
+    //        }
+    //        return sb.toString();
+    //    }
 
     /**
      * Requests the initial message from the server
@@ -210,12 +221,13 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         //        MerchantEntity merchant = (MerchantEntity)((MerchantScreenHandlerAccessor) this.handler).getMerchant();
         //        buf.writeString(merchant.); //write the string to the buf
         buf.writeString("req");
-        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.INITIAL_VILLAGER_MESSAGE_REQUEST, buf); //send packet to server
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.INITIAL_VILLAGER_MESSAGE_REQUEST,
+                                  buf); //send packet to server
     }
 
     private void onInitialMessageReceived(String message){
         chatHistory.add(message);
-        this.chatBox = newChatBoxWithUpdatedText("Villager: " + message);
+        currentInstance.chatBox.setMessage("Villager: \n" + message);
     }
 
     @Override
@@ -309,14 +321,25 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     protected void drawForeground(DrawContext context, int mouseX, int mouseY){
         int i = ((MerchantScreenHandler) this.handler).getLevelProgress();
         if (i > 0 && i <= 5 && ((MerchantScreenHandler) this.handler).isLeveled()){
-            MutableText text = Text.translatable((String) "merchant.title", (Object[]) new Object[]{this.title, Text.translatable((String) ("merchant.level." + i))});
+            MutableText text = Text.translatable((String) "merchant.title",
+                                                 (Object[]) new Object[]{this.title, Text.translatable((String) ("merchant.level." + i))});
             int j = this.textRenderer.getWidth((StringVisitable) text);
             int k = 49 + this.backgroundWidth / 2 - j / 2;
             context.drawText(this.textRenderer, (Text) text, k, 6, 0x404040, false);
         } else{
-            context.drawText(this.textRenderer, this.title, 49 + this.backgroundWidth / 2 - this.textRenderer.getWidth((StringVisitable) this.title) / 2, 6, 0x404040, false);
+            context.drawText(this.textRenderer,
+                             this.title,
+                             49 + this.backgroundWidth / 2 - this.textRenderer.getWidth((StringVisitable) this.title) / 2,
+                             6,
+                             0x404040,
+                             false);
         }
-        context.drawText(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 0x404040, false);
+        context.drawText(this.textRenderer,
+                         this.playerInventoryTitle,
+                         this.playerInventoryTitleX,
+                         this.playerInventoryTitleY,
+                         0x404040,
+                         false);
         int l = this.textRenderer.getWidth((StringVisitable) TRADES_TEXT);
         context.drawText(this.textRenderer, TRADES_TEXT, 5 - l / 2 + 48, 6, 0x404040, false);
     }
@@ -424,23 +447,24 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         if (((MerchantScreenHandler) this.handler).isLeveled()){
             this.drawLevelInfo(context, i, j, t);
         }
-        if (t.isDisabled() && this.isPointWithinBounds(186, 35, 22, 21, mouseX, mouseY) && ((MerchantScreenHandler) this.handler).canRefreshTrades()){
+        if (t.isDisabled() && this.isPointWithinBounds(186,
+                                                       35,
+                                                       22,
+                                                       21,
+                                                       mouseX,
+                                                       mouseY) && ((MerchantScreenHandler) this.handler).canRefreshTrades()){
             context.drawTooltip(this.textRenderer, DEPRECATED_TEXT, mouseX, mouseY);
         }
         for (WidgetButtonPage widgetButtonPage : this.offers){
             if (widgetButtonPage.isSelected()){
                 widgetButtonPage.renderTooltip(context, mouseX, mouseY);
             }
-            widgetButtonPage.visible = widgetButtonPage.index < ((MerchantScreenHandler) this.handler).getRecipes().size();
+            widgetButtonPage.visible = widgetButtonPage.index < ((MerchantScreenHandler) this.handler).getRecipes()
+                                                                                                      .size();
         }
         RenderSystem.enableDepthTest();
 
         this.drawMouseoverTooltip(context, mouseX, mouseY);
-
-        //villagertalk GUI rendering
-        writingField.render(context, mouseX, mouseY, 0);
-
-        chatBox.render(context, mouseX, mouseY, 0);
     }
 
 
@@ -458,8 +482,16 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         if (originalFirstBuyItem.getCount() == adjustedFirstBuyItem.getCount()){
             context.drawItemInSlot(this.textRenderer, adjustedFirstBuyItem, x, y);
         } else{
-            context.drawItemInSlot(this.textRenderer, originalFirstBuyItem, x, y, originalFirstBuyItem.getCount() == 1 ? "1" : null);
-            context.drawItemInSlot(this.textRenderer, adjustedFirstBuyItem, x + 14, y, adjustedFirstBuyItem.getCount() == 1 ? "1" : null);
+            context.drawItemInSlot(this.textRenderer,
+                                   originalFirstBuyItem,
+                                   x,
+                                   y,
+                                   originalFirstBuyItem.getCount() == 1 ? "1" : null);
+            context.drawItemInSlot(this.textRenderer,
+                                   adjustedFirstBuyItem,
+                                   x + 14,
+                                   y,
+                                   adjustedFirstBuyItem.getCount() == 1 ? "1" : null);
             context.getMatrices().push();
             context.getMatrices().translate(0.0f, 0.0f, 300.0f);
             context.drawGuiTexture(DISCOUNT_STRIKETHROUGH_TEXTURE, x + 7, y + 12, 0, 9, 2);
@@ -476,7 +508,9 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         int i = ((MerchantScreenHandler) this.handler).getRecipes().size();
         if (this.canScroll(i)){
             int j = i - 7;
-            this.indexStartOffset = MathHelper.clamp((int) ((int) ((double) this.indexStartOffset - verticalAmount)), (int) 0, (int) j);
+            this.indexStartOffset = MathHelper.clamp((int) ((int) ((double) this.indexStartOffset - verticalAmount)),
+                                                     (int) 0,
+                                                     (int) j);
         }
         //chatbox scroll
         chatBox.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -503,7 +537,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         this.scrolling = false;
         int i = (this.width - this.backgroundWidth) / 2;
         int j = (this.height - this.backgroundHeight) / 2;
-        if (this.canScroll(((MerchantScreenHandler) this.handler).getRecipes().size()) && mouseX > (double) (i + 94) && mouseX < (double) (i + 94 + 6) && mouseY > (double) (j + 18) && mouseY <= (double) (j + 18 + 139 + 1)){
+        if (this.canScroll(((MerchantScreenHandler) this.handler).getRecipes()
+                                                                 .size()) && mouseX > (double) (i + 94) && mouseX < (double) (i + 94 + 6) && mouseY > (double) (j + 18) && mouseY <= (double) (j + 18 + 139 + 1)){
             this.scrolling = true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -524,17 +559,24 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         }
 
         public void renderTooltip(DrawContext context, int x, int y){
-            if (this.hovered && ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes().size() > this.index + ExtendedMerchantScreen.this.indexStartOffset){
+            if (this.hovered && ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes()
+                                                                                             .size() > this.index + ExtendedMerchantScreen.this.indexStartOffset){
                 if (x < this.getX() + 20){
-                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes().get(this.index + ExtendedMerchantScreen.this.indexStartOffset)).getAdjustedFirstBuyItem();
+                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes()
+                                                                                                                     .get(
+                                                                                                                         this.index + ExtendedMerchantScreen.this.indexStartOffset)).getAdjustedFirstBuyItem();
                     context.drawItemTooltip(ExtendedMerchantScreen.this.textRenderer, itemStack, x, y);
                 } else if (x < this.getX() + 50 && x > this.getX() + 30){
-                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes().get(this.index + ExtendedMerchantScreen.this.indexStartOffset)).getSecondBuyItem();
+                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes()
+                                                                                                                     .get(
+                                                                                                                         this.index + ExtendedMerchantScreen.this.indexStartOffset)).getSecondBuyItem();
                     if (!itemStack.isEmpty()){
                         context.drawItemTooltip(ExtendedMerchantScreen.this.textRenderer, itemStack, x, y);
                     }
                 } else if (x > this.getX() + 65){
-                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes().get(this.index + ExtendedMerchantScreen.this.indexStartOffset)).getSellItem();
+                    ItemStack itemStack = ((TradeOffer) ((MerchantScreenHandler) ExtendedMerchantScreen.this.handler).getRecipes()
+                                                                                                                     .get(
+                                                                                                                         this.index + ExtendedMerchantScreen.this.indexStartOffset)).getSellItem();
                     context.drawItemTooltip(ExtendedMerchantScreen.this.textRenderer, itemStack, x, y);
                 }
             }

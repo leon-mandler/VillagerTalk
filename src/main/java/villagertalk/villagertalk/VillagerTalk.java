@@ -250,7 +250,7 @@ public class VillagerTalk implements ModInitializer{
                        .append(" Emeralds\n");
             }
         }
-        return selling.append(buying.toString()).append("\n").toString();
+        return selling.append(buying).append("\n").toString();
     }
 
     public static String generateVillagerName(){
@@ -301,9 +301,8 @@ public class VillagerTalk implements ModInitializer{
         ChatMessage response = makeAPICall(playerChatHistory);
         playerChatHistory.add(response);
         VillagerEntity villager = activeVillagers.get(player.getId());
-        String processedResponse = processLLMResponse(response.getContent(), player, villager);
 
-        return processedResponse;
+        return processLLMResponse(response.getContent(), player, villager);
     }
 
     private String processLLMResponse(String response, ServerPlayerEntity player, VillagerEntity villager){
@@ -469,7 +468,6 @@ public class VillagerTalk implements ModInitializer{
     public static void onVillagerTradeClose(PlayerEntity player){
         if (!(player instanceof ServerPlayerEntity)){
             LOGGER.info("onVillagerTradeClose: player " + player.getName().getString() + " is NOT serverPlayerEntity");
-            return;
         }
     }
 }

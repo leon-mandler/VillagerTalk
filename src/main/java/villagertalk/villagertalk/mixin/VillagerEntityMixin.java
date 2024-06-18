@@ -19,6 +19,4 @@ public abstract class VillagerEntityMixin{
     private void beginTradeWith(PlayerEntity customer, CallbackInfo info) {
         VillagerTalk.onVillagerTradeOpen(customer,  (VillagerEntity)(Object)this);
     }
-
-
 }

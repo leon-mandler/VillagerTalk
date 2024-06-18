@@ -8,6 +8,10 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LargeEntitySpawnHelper;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -37,7 +41,8 @@ public class VillagerTalk implements ModInitializer{
     public static final Logger LOGGER = LoggerFactory.getLogger("villagertalk");
     private static final String MAYBE_SOME_KEY = "7Uu3GnZeci1XvmHRW0HBJFkblB3TR453p4L3NWwr2mmBakcY-jorp-ks";
 
-    private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse().toString());
+    private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse()
+                                                                                                         .toString());
     private static final Random random = new Random();
     public static boolean TESTING = false;
 
@@ -45,7 +50,7 @@ public class VillagerTalk implements ModInitializer{
     private static final Map<Integer, List<ChatMessage>> playerChats = new HashMap<>();
 
     private static final String initialPromptTemplate = """
-        You are GPT-4, acting as a Minecraft Villager in a mod that gives the user, which is in this case the player, the ability to chat and negotiate with the games Villagers.
+        You are GPT-4o, acting as a Minecraft Villager in a mod that gives the user, which is in this case the player, the ability to chat and negotiate with the games Villagers.
         Your role is to interact with players through a chat in the game.
         You will chat with players, negotiate trade prices, and respond in character based on your provided attributes.
         Each Villager has its own personality and characteristics that influence how they interact with players.
@@ -71,8 +76,10 @@ public class VillagerTalk implements ModInitializer{
             -At the end of your response, if the player was sufficiently persuasive, use a command to adjust the price or amount of an item.
             -When the player wants to change the amount of emeralds in a trade, use !change_emerald_amount(ItemName, NewEmeraldAmount) to change the emerald amount for the trade that contains the specified ItemName.
             -When the player wants to change how much items they get (you are selling) or have to give you (you are buying), use !change_item_amount(ItemName, NewItemAmount) to adjust the amount of the specified ItemName. 
+            -You can use more than one command in a message.
             -When it is unclear to you, which of the trade offers the player wants to negotiate, ask for clarification.
             -If the player is rude or threatening, you may also choose to set a higher price, or lower reward.
+            -If the player is extremely threatening, and the villager is scared by them, you can use the command !spawn_golem, to spawn an iron golem that protects you. 
                 
         Correct usage of the command !change_emerald_amount(ItemName, NewEmeraldAmount):
             -The Item name must exactly identical, to the name specified in the list of trade offers, but not include the amount.
@@ -177,9 +184,8 @@ public class VillagerTalk implements ModInitializer{
         } else{
             name = villager.getCustomName().getString();
         }
-
         String prompt = formatInitialPrompt(name,
-                                            villager.age,
+                                            random.nextInt(16, 95),
                                             villager.getVillagerData().getProfession().toString(),
                                             villager.getVillagerData().getType().toString(),
                                             generateRandomAttitude(),
@@ -285,10 +291,10 @@ public class VillagerTalk implements ModInitializer{
      * @return The generated response
      */
     private String generateLLMResponse(String prompt, ServerPlayerEntity player){
-//                String response = "!change_price(Brick, 10)";
-//                VillagerEntity villager = activeVillagers.get(player.getId());
-//                parseStringForCommands(response).forEach((name, newEmeraldAmount) -> changePrice(name, newEmeraldAmount, player, villager));
-//                return response;
+        //                String response = "!change_price(Brick, 10)";
+        //                VillagerEntity villager = activeVillagers.get(player.getId());
+        //                parseStringForCommands(response).forEach((name, newEmeraldAmount) -> changePrice(name, newEmeraldAmount, player, villager));
+        //                return response;
         List<ChatMessage> playerChatHistory = playerChats.get(player.getId());
         playerChatHistory.add(new ChatMessage(ChatMessageRole.USER.value(), prompt));
         ChatMessage response = makeAPICall(playerChatHistory);
@@ -299,39 +305,35 @@ public class VillagerTalk implements ModInitializer{
         return processedResponse;
     }
 
-    private String processLLMResponse(String response,  ServerPlayerEntity player, VillagerEntity villager){
+    private String processLLMResponse(String response, ServerPlayerEntity player, VillagerEntity villager){
         Pattern[] patterns = {
             Pattern.compile("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)"),
-            Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)")
+            Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)"),
+            Pattern.compile("!spawn_golem\b")
         };
 
-        for (Pattern p : patterns) {
+        for (Pattern p : patterns){
             Matcher matcher = p.matcher(response);
-            StringBuilder processedResponse = new StringBuilder(response); // Use StringBuilder for modifications
+            StringBuilder processedResponse = new StringBuilder(response);
 
-            // Loop through all matches of the current pattern
-            while (matcher.find()) {
-                // Extract itemName, newPrice (or corresponding values for different commands)
+            while (matcher.find()){
                 String itemName = matcher.group(1).trim();
                 int newAmount = Integer.parseInt(matcher.group(2).trim());
 
-                // Call the corresponding method based on the command p
-                switch (p.pattern()) {
-                    case "!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)":
+                switch (p.pattern()){
+                    case "!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)" ->
                         changeEmeraldAmount(itemName, newAmount, player, villager);
-                        break;
-                    case "!change_item_amount\\(([^,]+),\\s*(\\d+)\\)":
+                    case "!change_item_amount\\(([^,]+),\\s*(\\d+)\\)" ->
                         changeItemAmount(itemName, newAmount, player, villager);
-                    // Add more cases for other commands and their methods
+                    case "!spawn_golem\b" ->
+                        spawnIronGolem(player, villager);
                 }
 
-                // Replace the matched command with an empty string
                 int start = matcher.start();
                 int end = matcher.end();
                 processedResponse.replace(start, end, "");
             }
 
-            // Update the response with processed content (after all matches are replaced)
             response = processedResponse.toString();
         }
 
@@ -339,21 +341,20 @@ public class VillagerTalk implements ModInitializer{
     }
 
 
-
-//    private Map<String, Integer> parseStringForCommands(String response){
-//        // Define the p to find the command !change_price(Item, NewPrice)
-//        Pattern pattern = Pattern.compile("!change_price\\(([^,]+),\\s*(\\d+)\\)");
-//        Matcher matcher = pattern.matcher(response);
-//        Map<String, Integer> priceChanges = new HashMap<>();
-//        // If the command is found, extract itemName and newPrice
-//        while (matcher.find()){
-//            String itemName = matcher.group(1).trim();
-//            int newPrice = Integer.parseInt(matcher.group(2).trim());
-//            // Call the changePrice method with the extracted values
-//            priceChanges.put(itemName, newPrice);
-//        }
-//        return priceChanges;
-//    }
+    //    private Map<String, Integer> parseStringForCommands(String response){
+    //        // Define the p to find the command !change_price(Item, NewPrice)
+    //        Pattern pattern = Pattern.compile("!change_price\\(([^,]+),\\s*(\\d+)\\)");
+    //        Matcher matcher = pattern.matcher(response);
+    //        Map<String, Integer> priceChanges = new HashMap<>();
+    //        // If the command is found, extract itemName and newPrice
+    //        while (matcher.find()){
+    //            String itemName = matcher.group(1).trim();
+    //            int newPrice = Integer.parseInt(matcher.group(2).trim());
+    //            // Call the changePrice method with the extracted values
+    //            priceChanges.put(itemName, newPrice);
+    //        }
+    //        return priceChanges;
+    //    }
     private void changeItemAmount(String itemName, int newItemAmount, ServerPlayerEntity player, VillagerEntity villager){
         MerchantScreenHandler handler;
         if (!(player.currentScreenHandler instanceof MerchantScreenHandler)){
@@ -381,6 +382,7 @@ public class VillagerTalk implements ModInitializer{
         villager.setOffers(curOffers);
         updateTradeGui(villager, handler.syncId);
     }
+
     private void changeEmeraldAmount(String itemName, int newEmeraldAmount, ServerPlayerEntity player, VillagerEntity villager){
         MerchantScreenHandler handler;
         if (!(player.currentScreenHandler instanceof MerchantScreenHandler)){
@@ -407,6 +409,23 @@ public class VillagerTalk implements ModInitializer{
         }
         villager.setOffers(curOffers);
         updateTradeGui(villager, handler.syncId);
+    }
+
+    private void spawnIronGolem(ServerPlayerEntity player, VillagerEntity villager){
+        Optional<IronGolemEntity> golem = LargeEntitySpawnHelper.trySpawnAt(EntityType.IRON_GOLEM,
+                                                                            SpawnReason.MOB_SUMMONED,
+                                                                            player.getServerWorld(),
+                                                                            villager.getBlockPos(),
+                                                                            20,
+                                                                            15,
+                                                                            8,
+                                                                            LargeEntitySpawnHelper.Requirements.IRON_GOLEM);
+        LOGGER.info("golem should be spawned.");
+        if(golem.isEmpty()){
+            LOGGER.info("golem empty.");
+            return;
+        }
+        golem.get().setAngryAt(player.getUuid());
     }
 
     private void updateTradeGui(VillagerEntity villager, int syncInt){

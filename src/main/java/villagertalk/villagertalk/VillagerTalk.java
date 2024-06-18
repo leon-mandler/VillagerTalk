@@ -9,7 +9,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LargeEntitySpawnHelper;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
@@ -19,7 +18,9 @@ import net.minecraft.item.Items;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.TradeOffer;
 import net.minecraft.village.TradeOfferList;
 import org.slf4j.Logger;
@@ -75,18 +76,18 @@ public class VillagerTalk implements ModInitializer{
             -Adjust prices/items counts based on your Villager's persuasiveness and attitude.
             -At the end of your response, if the player was sufficiently persuasive, use a command to adjust the price or amount of an item.
             -When the player wants to change the amount of emeralds in a trade, use !change_emerald_amount(ItemName, NewEmeraldAmount) to change the emerald amount for the trade that contains the specified ItemName.
-            -When the player wants to change how much items they get (you are selling) or have to give you (you are buying), use !change_item_amount(ItemName, NewItemAmount) to adjust the amount of the specified ItemName. 
+            -When the player wants to change how much items they get (you are selling) or have to give you (you are buying), use !change_item_amount(ItemName, NewItemAmount) to adjust the amount of the specified ItemName.
             -You can use more than one command in a message.
             -When it is unclear to you, which of the trade offers the player wants to negotiate, ask for clarification.
             -If the player is rude or threatening, you may also choose to set a higher price, or lower reward.
-            -If the player is extremely threatening, and the villager is scared by them, you can use the command !spawn_golem, to spawn an iron golem that protects you. 
+            -If the player is extremely threatening, and the villager is scared by them, you can use the command "!spawn_golem", to spawn an iron golem that protects you.
                 
         Correct usage of the command !change_emerald_amount(ItemName, NewEmeraldAmount):
             -The Item name must exactly identical, to the name specified in the list of trade offers, but not include the amount.
             -The NewEmeraldAmount parameter, is the new number of Emeralds that the player needs to pay, or receives as a reward.
             -NewEmeraldAmount must always be whole positive integers.
             -0 < NewEmeraldAmount <= 64
-            
+                
         Correct usage of the command !change_item_amount(ItemName, NewItemAmount):
             -The Item name must exactly identical, to the name specified in the list of trade offers, but not include the amount.
             -The NewItemAmount parameter, is the new number of Items that the player receives for their emeralds, or give you to receive emeralds.
@@ -306,10 +307,10 @@ public class VillagerTalk implements ModInitializer{
     }
 
     private String processLLMResponse(String response, ServerPlayerEntity player, VillagerEntity villager){
-        Pattern[] patterns = {
-            Pattern.compile("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)"),
-            Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)"),
-            Pattern.compile("!spawn_golem\b")
+        Pattern[] patterns = {//
+            Pattern.compile("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)"),//
+            Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)"),//
+            Pattern.compile("!spawn_golem\\b")//
         };
 
         for (Pattern p : patterns){
@@ -317,16 +318,18 @@ public class VillagerTalk implements ModInitializer{
             StringBuilder processedResponse = new StringBuilder(response);
 
             while (matcher.find()){
-                String itemName = matcher.group(1).trim();
-                int newAmount = Integer.parseInt(matcher.group(2).trim());
+                if (p.pattern().equals("!spawn_golem\\b")) {
+                    spawnIronGolem(player, villager);
+                } else {
+                    String itemName = matcher.group(1).trim();
+                    int newAmount = Integer.parseInt(matcher.group(2).trim());
+                    LOGGER.info(matcher.group());
 
-                switch (p.pattern()){
-                    case "!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)" ->
+                    if (p.pattern().equals("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)")) {
                         changeEmeraldAmount(itemName, newAmount, player, villager);
-                    case "!change_item_amount\\(([^,]+),\\s*(\\d+)\\)" ->
+                    } else if (p.pattern().equals("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)")) {
                         changeItemAmount(itemName, newAmount, player, villager);
-                    case "!spawn_golem\b" ->
-                        spawnIronGolem(player, villager);
+                    }
                 }
 
                 int start = matcher.start();
@@ -412,20 +415,11 @@ public class VillagerTalk implements ModInitializer{
     }
 
     private void spawnIronGolem(ServerPlayerEntity player, VillagerEntity villager){
-        Optional<IronGolemEntity> golem = LargeEntitySpawnHelper.trySpawnAt(EntityType.IRON_GOLEM,
-                                                                            SpawnReason.MOB_SUMMONED,
-                                                                            player.getServerWorld(),
-                                                                            villager.getBlockPos(),
-                                                                            20,
-                                                                            15,
-                                                                            8,
-                                                                            LargeEntitySpawnHelper.Requirements.IRON_GOLEM);
-        LOGGER.info("golem should be spawned.");
-        if(golem.isEmpty()){
-            LOGGER.info("golem empty.");
-            return;
-        }
-        golem.get().setAngryAt(player.getUuid());
+        ServerWorld world = player.getServerWorld();
+        BlockPos.Mutable mutable = villager.getBlockPos().mutableCopy();
+        IronGolemEntity entity = EntityType.IRON_GOLEM.create(world, null, null, mutable, SpawnReason.TRIGGERED, false, false);
+        world.spawnEntityAndPassengers(entity);
+        if(entity != null) entity.setAngryAt(player.getUuid());
     }
 
     private void updateTradeGui(VillagerEntity villager, int syncInt){

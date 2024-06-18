@@ -9,7 +9,4 @@ public interface VillagerEntityInvoker{
 
     @Invoker("clearSpecialPrices")
     public void invokeClearSpecialPrices();
-
-    @Invoker("sendOffersToCustomer")
-    public void sendOffersToCustomer();
 }

@@ -75,8 +75,7 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     private boolean scrolling;
 
     //villagertalk constants
-    private VillagerTalkScrollableChatWidget chatBox;
-    private final List<String> chatHistory = new ArrayList<>();
+    private final VillagerTalkScrollableChatWidget chatBox;
     private final TextFieldWidget writingField;
 
     private static ExtendedMerchantScreen currentInstance = null;
@@ -89,11 +88,11 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         //VillagerTalk constructor
         //textField
         this.writingField = new TextFieldWidget(MinecraftClient.getInstance().textRenderer, 256, 64, Text.literal(""));
-        this.writingField.setEditable(true);
+        this.writingField.setEditable(false);
         this.writingField.setDrawsBackground(true);
         this.writingField.setMaxLength(256);
         this.writingField.setPlaceholder(Text.literal("Click to talk with villager")); //placeholder
-        this.addDrawableChild(writingField);
+
         writingField.setPosition(50, 325);
 
 
@@ -105,7 +104,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
                                                             MinecraftClient.getInstance().textRenderer);
         requestInitialMessageFromServer();
         chatBox.visible = true;
-        this.addDrawableChild(chatBox);
 
         currentInstance = this;
     }
@@ -135,10 +133,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
                                                     }));
     }
 
-
-    //TODO VILLAGER TALK METHODS START
-
-
     /**
      * Overridden close method to ensure that the current instance is set to null
      */
@@ -146,9 +140,7 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     public void close(){
         super.close();
         currentInstance = null;
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString("closed");
-        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED, buf); //send packet to server
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED, PacketByteBufs.empty()); //send packet to server
     }
 
     /**
@@ -158,9 +150,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
      * @param response the response from the villager
      */
     private void onVillagerResponseReceived(String response){
-        if (VillagerTalk.TESTING) System.out.println("onVillagerResponseReceived: " + response);
-        chatHistory.add(response);
-        addMessageToChatBox("\n\nVillager: " + response);
+        addMessageToChatBox(response);
+        writingField.setEditable(true);
     }
 
     /**
@@ -190,29 +181,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
                                                     MinecraftClient.getInstance().textRenderer); //renderer
     }
 
-    //    /**
-    //     * Processes the villager response
-    //     *
-    //     * @param response the response from the villager
-    //     * @return the processed response
-    //     */
-    //    private String processVillagerResponse(String response){
-    //        return response; //TODO
-    //    }
-
-    //    /**
-    //     * Returns the chat history as a string
-    //     *
-    //     * @return the chat history as a string
-    //     */
-    //    private String getChatHistoryAsString(){
-    //        StringBuilder sb = new StringBuilder();
-    //        for (String s : chatHistory){
-    //            sb.append(s).append("\n");
-    //        }
-    //        return sb.toString();
-    //    }
-
     /**
      * Requests the initial message from the server
      */
@@ -226,8 +194,9 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     }
 
     private void onInitialMessageReceived(String message){
-        chatHistory.add(message);
-        currentInstance.chatBox.setMessage("Villager: \n" + message);
+        currentInstance.writingField.setEditable(true);
+        currentInstance.chatBox.setMessage(message);
+        currentInstance.chatBox.setMaxScrollY();
     }
 
     @Override
@@ -237,19 +206,19 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
-        boolean writingFieldActive = writingField.isActive();
+        boolean writingFieldActive = currentInstance.writingField.isActive();
 
         if (writingFieldActive && keyCode == GLFW.GLFW_KEY_E){
             return true; // Prevent exiting the window when typing 'E'
         }
 
         if (writingFieldActive && keyCode == GLFW.GLFW_KEY_ENTER){
-            sendPlayerMessage();
+            currentInstance.sendPlayerMessage();
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
         if (!writingFieldActive && keyCode == GLFW.GLFW_KEY_ENTER){
-            writingField.setFocused(true);
+            currentInstance.writingField.setFocused(true);
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
@@ -265,8 +234,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     private void onPlayerMessageSent(String message){
         writingField.setFocused(false);
         writingField.setText("");
-        chatHistory.add(message);
-        addMessageToChatBox("\n\nPlayer: " + message);
+        writingField.setEditable(false);
+        addMessageToChatBox("Player: " + message + "\n\n");
     }
 
     /**
@@ -291,8 +260,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.PLAYER_SENT_PROMPT, buf); //send packet to server
     }
 
-    //TODO VILLAGER TALK METHODS END
-
 
     private void syncRecipeIndex(){
         ((MerchantScreenHandler) this.handler).setRecipeIndex(this.selectedIndex);
@@ -315,6 +282,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
             }));
             k += 20;
         }
+        this.addDrawableChild(writingField);
+        this.addDrawableChild(chatBox);
     }
 
     @Override
@@ -361,9 +330,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         if (tradeOffer.isDisabled()){
             context.drawGuiTexture(OUT_OF_STOCK_TEXTURE, this.x + 83 + 99, this.y + 35, 0, 28, 21);
         }
-
-        //draw VillagerTalkBackround
-        //TODO
     }
 
     private void drawLevelInfo(DrawContext context, int x, int y, TradeOffer tradeOffer){

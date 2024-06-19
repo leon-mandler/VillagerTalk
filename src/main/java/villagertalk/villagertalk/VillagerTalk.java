@@ -46,7 +46,6 @@ public class VillagerTalk implements ModInitializer{
 
     private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse()
                                                                                                          .toString());
-    private static final Random random = new Random();
     public static boolean TESTING = false;
 
     private static final Map<UUID, VillagerEntity> activeVillagers = new HashMap<>();

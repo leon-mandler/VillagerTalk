@@ -28,9 +28,6 @@ import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkS2CNetworkingConstants;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Environment(value = EnvType.CLIENT)
 public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>{
 

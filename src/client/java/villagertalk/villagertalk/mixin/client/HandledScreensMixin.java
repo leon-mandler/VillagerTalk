@@ -11,9 +11,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import villagertalk.villagertalk.VillagerChatUI.ExtendedMerchantScreen;
 
 /**
- * HandledScreensMixin
- * Mixin to register the MerchantScreen class to the HandledScreens registry
- * Redirects the register method to use the ExtendedMerchantScreen class, when the ScreenHandlerType is MERCHANT
+ * Mixin that redirects the registration of the MerchantScreen to use ExtendedMerchantScreen instead.
+ * Prevents MerchantScreenHandler from using MerchantScreen instead.
  */
 
 @Mixin(HandledScreens.class)

@@ -44,12 +44,23 @@ public class VillagerTalk implements ModInitializer{
     public static final Logger LOGGER = LoggerFactory.getLogger("villagertalk");
     private static final String MAYBE_SOME_KEY = "7Uu3GnZeci1XvmHRW0HBJFkblB3TR453p4L3NWwr2mmBakcY-jorp-ks";
 
+    /**
+     * The OpenAI API service used to generate responses
+     */
     private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse()
                                                                                                          .toString());
     public static boolean TESTING = false;
 
+    /**
+     * All villagers that are currently active. Used to get the corresponding villager when a client sends a request.
+     */
     private static final Map<UUID, VillagerEntity> activeVillagers = new HashMap<>();
+
+    /**
+     * All previous chats from the current session. Used to keep track of the chat history for each villager.
+     */
     private static final List<VillagerChatData> previousChats = new ArrayList<>();
+
 
     public static final Pattern CHANGE_EMERALD_AMOUNT = Pattern.compile("!change_emerald_amount\\(([^,]+),\\s*(\\d+)\\)");
     public static final Pattern CHANGE_ITEM_AMOUNT = Pattern.compile("!change_item_amount\\(([^,]+),\\s*(\\d+)\\)");
@@ -57,6 +68,11 @@ public class VillagerTalk implements ModInitializer{
 
     public static final Pattern[] COMMANDS = {CHANGE_EMERALD_AMOUNT, CHANGE_ITEM_AMOUNT, SPAWN_GOLEM};
 
+    /**
+     * Entry point for the mod, called when the game is initialized.
+     * <p>
+     *     Registers the networking for the mod. Global receivers for the player's prompt, the initial villager message request, and the villager closed packet.
+     */
     @Override
     public void onInitialize(){
         ServerPlayNetworking.registerGlobalReceiver(VillagerTalkC2SNetworkingConstants.PLAYER_SENT_PROMPT,
@@ -90,12 +106,29 @@ public class VillagerTalk implements ModInitializer{
                                                     });
     }
 
+    /**
+     * Sends the initial message of the villager to the player.
+     *
+     * @param player  The player to send the message to
+     * @param message The message to send
+     */
     private void sendInitialMessage(ServerPlayerEntity player, String message){
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeString(message);
         ServerPlayNetworking.send(player, VillagerTalkS2CNetworkingConstants.VILLAGER_INITIAL_MESSAGE, buf);
     }
 
+    /**
+     * Generates the initial response for a player.
+     * Uses {@link VillagerTalk#activeVillagers} to get the current actuve villager for the player.
+     * If the player has an existing chat, it will refresh the system prompt and return the existing chat history.
+     * Uses {@link VillagerTalk#makeAPICall(List)} to generate the initial message.
+     * <p>
+     * If the existing chat is too large to be sent (>= 32_000 byte), a new chat will be started.
+     *
+     * @param player The player that opened the villager
+     * @return The initial response
+     */
     private String generateInitialResponse(ServerPlayerEntity player){
         VillagerEntity villager = activeVillagers.get(player.getUuid());
         if (villager == null){
@@ -127,6 +160,14 @@ public class VillagerTalk implements ModInitializer{
         return chatData.getVillagerName() + ":\n " + initialMessage.getContent() + "\n\n";
     }
 
+    /**
+     * Finds an existing chat for a player with a villager.
+     * Returns null if no chat is found.
+     *
+     * @param villagerID The UUID of the villager
+     * @param playerID   The UUID of the player
+     * @return The existing chat, or null if no chat is found
+     */
     private VillagerChatData findExistingChat(UUID villagerID, UUID playerID){
         for (VillagerChatData v : previousChats){
             if (v.getVillagerID().equals(villagerID) && v.playerID().equals(playerID)){
@@ -136,6 +177,12 @@ public class VillagerTalk implements ModInitializer{
         return null;
     }
 
+    /**
+     * Makes an API call to the OpenAI API to generate a response to a list of messages, or, if it is a new chat, to generate the initial message.
+     *
+     * @param messages The messages to generate a response to
+     * @return The generated response as a {@link ChatMessage}
+     */
     private ChatMessage makeAPICall(List<ChatMessage> messages){
         ChatCompletionRequest completionRequest = ChatCompletionRequest.builder()
                                                                        .model("gpt-4o")
@@ -147,16 +194,25 @@ public class VillagerTalk implements ModInitializer{
     }
 
 
+    /**
+     * Called when a player closes a villager.
+     * Removes the player from {@link VillagerTalk#activeVillagers}
+     *
+     * @param player The player that closed the villager
+     */
     private void onPlayerVillagerCLose(ServerPlayerEntity player){
         activeVillagers.remove(player.getUuid());
     }
 
     /**
-     * generateLLMResponse
-     * Generates a response to a chathistory using the LLM
+     * Generates a response to a chathistory using {@link VillagerTalk#makeAPICall(List)}
+     * Uses {@link VillagerTalk#findExistingChat(UUID villager, UUID player)} to find the existing {@link VillagerChatData} for the player and villager.
+     * Refreshes the system prompt and adds the player's prompt to the chat history.
+     * Then generates a response and adds it to the chat history.
      *
-     * @param prompt The chathistory to generate a response to
-     * @return The generated response
+     * @param prompt The prompt to generate a response to
+     * @param player The {@link ServerPlayerEntity} that sent the prompt
+     * @return The formatted generated response or an error message if no existing chat is found.
      */
     private String generateLLMResponse(String prompt, ServerPlayerEntity player){
         VillagerChatData existingChat = findExistingChat(activeVillagers.get(player.getUuid()).getUuid(),
@@ -175,6 +231,20 @@ public class VillagerTalk implements ModInitializer{
                                                                            existingChat.villager()) + "\n\n";
     }
 
+    /**
+     * Processes the response from the OpenAI API.
+     * <p>
+     *     Processes the response to check for any commands, such as changing the amount of emeralds or items, or spawning an iron golem.
+     *     If a command is found, it calls {@link VillagerTalk#spawnIronGolem(ServerPlayerEntity, VillagerEntity)},
+     *     {@link VillagerTalk#changeAmount(String itemName, int newAmount, ServerPlayerEntity, VillagerEntity, boolean true)}, or
+     *     {@link VillagerTalk#changeAmount(String itemName, int newAmount, ServerPlayerEntity, VillagerEntity, boolean false)} and removes the command from the response.
+     * </p>
+     *
+     * @param response The response to process
+     * @param player The player that sent the prompt
+     * @param villager The villager that the player is talking to
+     * @return The processed response
+     */
     private String processLLMResponse(String response, ServerPlayerEntity player, VillagerEntity villager){
         for (Pattern p : COMMANDS){
             Matcher matcher = p.matcher(response);
@@ -204,6 +274,20 @@ public class VillagerTalk implements ModInitializer{
         return response;
     }
 
+    /**
+     * Changes the amount of an item or emeralds in a villager's trade offers.
+     * <p>
+     *     Uses {@link VillagerEntity#getOffers()} to get the current trade offers of the villager.
+     *     Iterates through the trade offers and changes the amount of the item or emeralds.
+     *     Then sets the new trade offers and updates the trade GUI using {@link VillagerTalk#updateTradeGui(VillagerEntity, int)}.
+     * </p>
+     *
+     * @param itemName The name of the item in the trade to change the amount of
+     * @param newAmount The new amount of the item
+     * @param player The player that sent the command
+     * @param villager The villager to change the trade offers of
+     * @param changeEmeraldAmount true: changes the emerald amount in the trade with the item, false: changes the item amount in the trade with the item
+     */
     private void changeAmount(String itemName, int newAmount, ServerPlayerEntity player, VillagerEntity villager, boolean changeEmeraldAmount){
         if (!(player.currentScreenHandler instanceof MerchantScreenHandler handler)){
             return;
@@ -244,6 +328,16 @@ public class VillagerTalk implements ModInitializer{
         updateTradeGui(villager, handler.syncId);
     }
 
+    /**
+     * Spawns an iron golem at the villager's location.
+     * <p>
+     *     Uses {@link EntityType#IRON_GOLEM} to create a new iron golem entity at the villager's location.
+     *     Spawns the iron golem in the world and sets the player as the target of the iron golem.
+     * </p>
+     *
+     * @param player The player that should be targeted
+     * @param villager The villager to spawn the iron golem at
+     */
     private void spawnIronGolem(ServerPlayerEntity player, VillagerEntity villager){
         ServerWorld world = player.getServerWorld();
         BlockPos.Mutable mutable = villager.getBlockPos().mutableCopy();
@@ -258,6 +352,15 @@ public class VillagerTalk implements ModInitializer{
         if (entity != null) entity.setAngryAt(player.getUuid());
     }
 
+    /**
+     * Updates the trade GUI of a villager.
+     * <p>
+     *     Refreshes the TradingGUI by sending the trade offers to the player.
+     * </p>
+     *
+     * @param villager The villager to update the trade GUI of
+     * @param syncInt The sync ID of the trade GUI
+     */
     private static void updateTradeGui(VillagerEntity villager, int syncInt){
         if (villager.getCustomer() != null && villager.getCustomer().currentScreenHandler instanceof MerchantScreenHandler && syncInt != 0){
             villager.getCustomer()
@@ -272,7 +375,6 @@ public class VillagerTalk implements ModInitializer{
 
 
     /**
-     * sendResponsePacket
      * Sends a response to the player
      *
      * @param response The response to send
@@ -284,6 +386,17 @@ public class VillagerTalk implements ModInitializer{
         ServerPlayNetworking.send(player, VillagerTalkS2CNetworkingConstants.VILLAGER_RESPONSE_PACKET, buf);
     }
 
+    /**
+     * Called when a player opens a villager trade GUI.
+     * <p>
+     *     Clears the special prices of the villager to remove vanilla discounts.
+     *     Updates the trade GUI using {@link VillagerTalk#updateTradeGui(VillagerEntity, int)}.
+     *     Adds the villager to {@link VillagerTalk#activeVillagers}.
+     * </p>
+     *
+     * @param player The player that opened the trade GUI
+     * @param villager The villager that the player is trading with
+     */
     public static void onVillagerTradeOpen(PlayerEntity player, VillagerEntity villager){
         if (!(player instanceof ServerPlayerEntity)){
             LOGGER.info("onVillagerTradeOpen: player {} is NOT serverPlayerEntity", player.getUuid());

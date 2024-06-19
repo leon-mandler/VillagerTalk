@@ -28,6 +28,11 @@ import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 import villagertalk.villagertalk.VillagerTalkPackets.VillagerTalkS2CNetworkingConstants;
 
+/**
+ * ExtendedMerchantScreen extends the MerchantScreen with additional features for villager interaction.
+ * This class is responsible for handling the UI elements and interactions for the villager trading screen.
+ * It includes additional UI elements for the chat box and text field for player input.
+ */
 @Environment(value = EnvType.CLIENT)
 public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>{
 
@@ -71,12 +76,39 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     int indexStartOffset;
     private boolean scrolling;
 
-    //villagertalk constants
+    /**
+     * Field for the chat box, using {@link VillagerTalkScrollableChatWidget}
+     */
     private final VillagerTalkScrollableChatWidget chatBox;
+
+    /**
+     * Field for the text field, using {@link TextFieldWidget}
+     */
     private final TextFieldWidget writingField;
 
+    /**
+     * Static field to store the current open instance of the screen
+     */
     private static ExtendedMerchantScreen currentInstance = null;
 
+    /**
+     * Constructs a new ExtendedMerchantScreen instance, extending the MerchantScreen with additional features for villager interaction.
+     *
+     * @param handler The {@link MerchantScreenHandler} instance to handle screen interactions. Must not be null.
+     * @param inventory The {@link PlayerInventory} instance representing the player's inventory. Must not be null.
+     * @param title The {@link Text} instance representing the screen title. Must not be null.
+     *
+     * This constructor initializes the ExtendedMerchantScreen with additional UI elements and settings:
+     * <ul>
+     *     <li>Initializes a {@link TextFieldWidget} for user input, positioned at (50, 325),
+     *         with a placeholder text "Click to talk with villager" and a maximum length of 256 characters.</li>
+     *     <li>Initializes a {@link VillagerTalkScrollableChatWidget} for displaying chat messages,
+     *         positioned at (50, 50) with dimensions 256x256, and sets its initial message to "Thinking about initial Message...".</li>
+     *     <li>Calls {@link #requestInitialMessageFromServer()} to request the initial chat message from the server.</li>
+     * </ul>
+     *
+     * Additionally, sets the current instance of ExtendedMerchantScreen to this instance.
+     */
     public ExtendedMerchantScreen(MerchantScreenHandler handler, PlayerInventory inventory, Text title){
         super(handler, inventory, title);
         this.backgroundWidth = 276;
@@ -93,11 +125,11 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         writingField.setPosition(50, 325);
 
 
-        this.chatBox = new VillagerTalkScrollableChatWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
-                                                            50, //(this.height - this.backgroundHeight) / 2, //yPos
-                                                            256, //width
-                                                            256, //height
-                                                            Text.literal("Thinking about initial Message..."), //text
+        this.chatBox = new VillagerTalkScrollableChatWidget(50,
+                                                            50,
+                                                            256,
+                                                            256,
+                                                            Text.literal("Thinking about initial Message..."),
                                                             MinecraftClient.getInstance().textRenderer);
         requestInitialMessageFromServer();
         chatBox.visible = true;
@@ -106,8 +138,9 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     }
 
 
-    /*Registers the VillagerResponsePacket in a static context
-    Call the necessary methods on the current instance to ensure thread safety*/
+    /**
+     * Static block to register the networking packets for the villager chat system
+     */
     static{
         ClientPlayNetworking.registerGlobalReceiver(VillagerTalkS2CNetworkingConstants.VILLAGER_RESPONSE_PACKET,
                                                     ((client, handler2, buf, responseSender) -> {
@@ -137,7 +170,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     public void close(){
         super.close();
         currentInstance = null;
-        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED, PacketByteBufs.empty()); //send packet to server
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.VILLAGER_CLOSED,
+                                  PacketByteBufs.empty()); //send packet to server
     }
 
     /**
@@ -153,7 +187,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
 
     /**
      * Adds a message to the chat box
-     * This is as far as I know the only way to update the chat box, since the setMessage() method doesn't work.
      *
      * @param text the message to be added
      */
@@ -164,38 +197,36 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     }
 
     /**
-     * Creates a new ScrollableTextWidget with the updated text
-     *
-     * @param text the text to be displayed
-     * @return the new ScrollableTextWidget
-     */
-    private VillagerTalkScrollableChatWidget newChatBoxWithUpdatedText(String text){
-        return new VillagerTalkScrollableChatWidget(50,//((this.width - this.backgroundWidth) / 2) - 128, //xpos
-                                                    50, //(this.height - this.backgroundHeight) / 2, //yPos
-                                                    256, //width
-                                                    256, //height
-                                                    Text.literal(text), //text
-                                                    MinecraftClient.getInstance().textRenderer); //renderer
-    }
-
-    /**
      * Requests the initial message from the server
      */
     private void requestInitialMessageFromServer(){
-        PacketByteBuf buf = PacketByteBufs.create();//create byte buf
-        //        MerchantEntity merchant = (MerchantEntity)((MerchantScreenHandlerAccessor) this.handler).getMerchant();
-        //        buf.writeString(merchant.); //write the string to the buf
-        buf.writeString("req");
-        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.INITIAL_VILLAGER_MESSAGE_REQUEST,
-                                  buf); //send packet to server
+        ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.INITIAL_VILLAGER_MESSAGE_REQUEST, PacketByteBufs.empty());
     }
 
+    /**
+     * Called when the initial message is received
+     * sets the chat box message to the initial message and sets the text field to editable
+     *
+     * @param message the initial message received
+     */
     private void onInitialMessageReceived(String message){
         currentInstance.writingField.setEditable(true);
         currentInstance.chatBox.setMessage(message);
         currentInstance.chatBox.setMaxScrollY();
     }
 
+    /**
+     * Overridden method to handle key presses
+     * Handles the ESC key press to close the screen
+     * Handles the 'E' key press to prevent exiting the window when typing
+     * Handles the 'Enter' key press to send the player message
+     * Handles the 'Enter' key press to set the text field to focused
+     *
+     * @param keyCode the key code of the key pressed
+     * @param scanCode the scan code of the key pressed
+     * @param modifiers the modifiers of the key pressed
+     * @return true if the key press was handled locally, otherwise return the super method
+     */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers){
         // Handle ESC key press
@@ -224,7 +255,7 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
 
     /**
      * Called when the player sends a message
-     * sets the text field to not focused, clears the text field, adds the message to the chat history and chat box
+     * sets the writingField to not focused, clears the writingField, sets the writingField to not editable, adds the message to the chat box
      *
      * @param message the message sent by the player
      */
@@ -237,8 +268,8 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
 
     /**
      * Sends a player message
-     * gets the message from the text field and calls onPlayerMessageSent
-     * then sends the message to the server
+     * gets the message from the writingField and calls {@link #onPlayerMessageSent(String)} with the message
+     * then calls {@link #sendPlayerPromptPacket(String)} with the message.
      */
     private void sendPlayerMessage(){
         String message = writingField.getText(); //get test from textfield
@@ -256,7 +287,18 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
         buf.writeString(message); //write the string to the buf
         ClientPlayNetworking.send(VillagerTalkC2SNetworkingConstants.PLAYER_SENT_PROMPT, buf); //send packet to server
     }
+/*
 
+
+
+
+    END OF VILLAGER TALK CODE
+
+
+
+
+
+ */
 
     private void syncRecipeIndex(){
         ((MerchantScreenHandler) this.handler).setRecipeIndex(this.selectedIndex);

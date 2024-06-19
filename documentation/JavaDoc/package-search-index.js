@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"Alle Packages","u":"allpackages-index.html"},{"l":"villagertalk.villagertalk"},{"l":"villagertalk.villagertalk.mixin"},{"l":"villagertalk.villagertalk.mixin.client"},{"l":"villagertalk.villagertalk.VillagerChatUI"},{"l":"villagertalk.villagertalk.VillagerTalkPackets"}];updateSearchResults();

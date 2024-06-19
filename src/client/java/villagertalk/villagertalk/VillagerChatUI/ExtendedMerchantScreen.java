@@ -193,7 +193,6 @@ public class ExtendedMerchantScreen extends HandledScreen<MerchantScreenHandler>
     private void addMessageToChatBox(String text){
         currentInstance.chatBox.setMessage(chatBox.getMessage().getString() + text);
         currentInstance.chatBox.setMaxScrollY();
-        if (VillagerTalk.TESTING) System.out.println("ChatBox: " + chatBox.getMessage().getString());
     }
 
     /**

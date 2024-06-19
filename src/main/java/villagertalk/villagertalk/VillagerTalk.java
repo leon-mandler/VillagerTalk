@@ -49,8 +49,6 @@ public class VillagerTalk implements ModInitializer{
      */
     private static final OpenAiService APIService = new OpenAiService((new StringBuilder(MAYBE_SOME_KEY)).reverse()
                                                                                                          .toString());
-    public static boolean TESTING = false;
-
     /**
      * All villagers that are currently active. Used to get the corresponding villager when a client sends a request.
      */

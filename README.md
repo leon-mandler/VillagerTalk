@@ -43,7 +43,7 @@ After Minecraft has started:
 
 - Pretty much everything is implemented, except Villagers remembering Conversations indefinitely. Instead, the chats are persistent in memory, so only for one continuous game session. On a server this would be until the server restarts. So in one game session, the villagers each have the same personality every time and all of the previous chats are visible.
 - The villagers can change the emerald, or the item amounts. 2nd items that are necessary for some trades are ignored (They are mostly irrelevant.)
-- When the villager is threatened, it **spawns an iron golem** at its position that attacks the player. (Only works in Survival mode, and in closed spaces the golem might suffocate in a wall lol)
+- When the villager is threatened, it **spawns an iron golem** at its position that attacks the player. (The golem aggression only works in Survival mode, and in closed spaces the golem might suffocate in a wall lol)
 - Currently, my **API Key** is hardcoded in the source code. It isn't expensive, in all our testing we have used 0.70€, so feel free to test as much as you want.
 - The code is pretty well documented with **JavaDoc**. (documentation/JavaDoc/index.html)
 

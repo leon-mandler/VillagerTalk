@@ -4,6 +4,9 @@
 VillagerTalk is a Minecraft mod aimed at transforming the player's interaction with Villager NPCs by introducing dynamic negotiation and bartering mechanics. 
 This mod is built for the Fabric modding platform.
 
+### Video
+https://youtu.be/OnSIS82DSUk
+
 ## Features
 
 ### Dynamic Negotiation System

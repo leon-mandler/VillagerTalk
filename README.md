@@ -13,7 +13,6 @@ This mod is built for the Fabric modding platform.
 
 ### Enhanced Trading HUD
 - **Custom Chat Interface:** The mod redesigns the trading HUD to include a chat window, allowing for seamless interaction without disrupting gameplay flow.
-- **Intuitive Design:** Care is taken to ensure the new HUD elements align with Minecraft's aesthetic, providing a user-friendly and intuitive interface.
 
 
 ### Installation
